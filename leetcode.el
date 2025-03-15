@@ -1031,38 +1031,31 @@ alist specified in `display-buffer-alist'."
   (let-alist result
     (with-current-buffer (get-buffer (leetcode--result-buffer-name problem-id))
       (erase-buffer)
+      (font-lock-mode 1)
       (goto-char (point-max))
       (cond
        ((eq .status_code 10)
+        (insert "Status: ")
         (if (equal .code_answer .expected_code_answer)
-            (insert (leetcode--add-font-lock "PASS: " 'leetcode-accepted-face))
-          (insert (leetcode--add-font-lock "FAIL: " 'leetcode-error-face)))
-        (insert "\n\n")
-        ;; Code Answer
-        (insert "Code Answer:\n")
-        (dotimes (i (length .code_answer))
-          (insert (format "%s\n" (aref .code_answer i))))
+            (insert (leetcode--add-font-lock " PASS " 'leetcode-accepted-face))
+          (insert (leetcode--add-font-lock " FAIL " 'leetcode-error-face)))
         (insert "\n")
-        ;; Expected
-        (insert "Expected Code Answer:\n")
-        (dotimes (i (length .expected_code_answer))
-          (insert (format "%s\n" (aref .expected_code_answer i))))
-        (insert "\n")
-        ;; Std output
-        (when (seq-find (lambda (s) (not (string-empty-p s))) .std_output_list)
-          (insert "Std Output:\n")
-          (dotimes (i (length .std_output_list))
-            (when (aref .std_output_list i)
-              (insert (aref .std_output_list i))))))
-       ((or (eq .status_code 12) (eq .status_code 14))
-        (insert (format "Status: %s\n\n"
-                        (leetcode--add-font-lock
-                         (format "%s (%s/%s)" .status_msg .total_correct .total_testcases)
-                         'leetcode-error-face)))
-        (insert (format "Test Case: \n%s\n\n" .last_testcase))
-        (insert (format "Expected Answer: %s\n\n" .expected_output))
-        (unless (string-empty-p .std_output)
-          (insert (format "Stdout: \n%s\n" .std_output))))
+        (dotimes (i (- (length .code_answer) 1))
+          (insert (format "\nCase %d:\n" (+ i 1)))
+          (unless (string-empty-p (aref .std_output_list i))
+            (insert "\tStdout:\n\t")
+            (insert (aref .std_output_list i)))
+          (if (equal (aref .code_answer i) (aref .expected_code_answer i))
+              (progn
+                (insert (format "\tOutput:   %s\n" (aref .code_answer i)))
+                (insert (format "\tExpected: %s\n" (aref .expected_code_answer i))))
+            (progn
+              (insert "\tOutput:   ")
+              (insert (leetcode--add-font-lock (aref .code_answer i) 'leetcode-error-face))
+              (insert "\n\tExpected: ")
+              (insert (leetcode--add-font-lock (aref .expected_code_answer i) 'leetcode-accepted-face))))))
+       ((eq .status_code 14)
+        (insert .status_msg))
        ((eq .status_code 15)
         (insert (leetcode--add-font-lock .status_msg 'leetcode-error-face))
         (insert "\n\n")
@@ -1076,7 +1069,7 @@ alist specified in `display-buffer-alist'."
        ((eq .status_code 20)
         (insert (leetcode--add-font-lock .status_msg 'leetcode-error-face))
         (insert "\n\n")
-        (insert .full_compile_error))))))
+        (insert (leetcode--add-font-lock .full_compile_error 'leetcode-error-face)))))))
 
 (defun leetcode--show-submission-result (problem-id result)
   "Show error info in `leetcode--result-buffer-name' by PROBLEM-ID.
