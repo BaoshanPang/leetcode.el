@@ -1119,6 +1119,8 @@ STATUS_CODE has following possible value:
         (insert (format "Status: %s" (leetcode--add-font-lock .status_msg 'leetcode-error-face)))
         (insert (format "\n\n%s / %s testcases passed\n" .total_correct .total_testcases))
         (insert (format "Last Test Case: %s\n" .last_testcase))
+        (unless (string-empty-p .std_output)
+          (insert (format "Stdout: \n%s\n" .std_output)))
         (insert "\n\n")
         (insert (format .full_runtime_error)))
        ((eq .status_code 20)
